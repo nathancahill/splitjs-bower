@@ -82,11 +82,8 @@ var Split = function (ids, options) {
     if ( options === void 0 ) options = {};
 
     var dimension;
-    var clientDimension;
     var clientAxis;
     var position;
-    var paddingA;
-    var paddingB;
     var elements;
 
     // All DOM elements in the split should have a common parent. We can grab
@@ -134,18 +131,12 @@ var Split = function (ids, options) {
     // rely on CSS strings and classes.
     if (direction === 'horizontal') {
         dimension = 'width';
-        clientDimension = 'clientWidth';
         clientAxis = 'clientX';
         position = 'left';
-        paddingA = 'paddingLeft';
-        paddingB = 'paddingRight';
     } else if (direction === 'vertical') {
         dimension = 'height';
-        clientDimension = 'clientHeight';
         clientAxis = 'clientY';
         position = 'top';
-        paddingA = 'paddingTop';
-        paddingB = 'paddingBottom';
     }
 
     // 3. Define the dragging helper functions, and a few helpers to go with them.
@@ -256,7 +247,6 @@ var Split = function (ids, options) {
     // ------------------------------------------------
     // | <- start                             size -> |
     function calculateSizes () {
-        // Figure out the parent size minus padding.
         var a = elements[this.a].element;
         var b = elements[this.b].element;
 
@@ -457,12 +447,6 @@ var Split = function (ids, options) {
             setElementSize(element.element, element.size, gutterSize);
         }
 
-        var computedSize = element.element[getBoundingClientRect]()[dimension];
-
-        if (computedSize < element.minSize) {
-            element.minSize = computedSize;
-        }
-
         // After the first iteration, and we have a pair object, append it to the
         // list of pairs.
         if (i > 0) {
@@ -470,6 +454,23 @@ var Split = function (ids, options) {
         }
 
         return element
+    });
+
+    elements.forEach(function (element, i) {
+        if (i < pairs.length) {
+            var computedSize = element.element[getBoundingClientRect]()[dimension];
+
+            if (computedSize < element.minSize) {
+                var pair = pairs[i];
+                calculateSizes.call(pair);
+
+                if (i === 0 || i === elements.length - 1) {
+                    adjust.call(pair, element.minSize + (gutterSize / 2));
+                } else {
+                    adjust.call(pair, element.minSize + gutterSize + (gutterSize / 2));
+                }
+            }
+        }
     });
 
     function setSizes (newSizes) {

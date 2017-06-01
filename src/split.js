@@ -72,11 +72,8 @@ const elementOrSelector = el => {
 // 5. Actually size the pair elements, insert gutters and attach event listeners.
 const Split = (ids, options = {}) => {
     let dimension
-    let clientDimension
     let clientAxis
     let position
-    let paddingA
-    let paddingB
     let elements
 
     // All DOM elements in the split should have a common parent. We can grab
@@ -123,18 +120,12 @@ const Split = (ids, options = {}) => {
     // rely on CSS strings and classes.
     if (direction === 'horizontal') {
         dimension = 'width'
-        clientDimension = 'clientWidth'
         clientAxis = 'clientX'
         position = 'left'
-        paddingA = 'paddingLeft'
-        paddingB = 'paddingRight'
     } else if (direction === 'vertical') {
         dimension = 'height'
-        clientDimension = 'clientHeight'
         clientAxis = 'clientY'
         position = 'top'
-        paddingA = 'paddingTop'
-        paddingB = 'paddingBottom'
     }
 
     // 3. Define the dragging helper functions, and a few helpers to go with them.
@@ -245,7 +236,6 @@ const Split = (ids, options = {}) => {
     // ------------------------------------------------
     // | <- start                             size -> |
     function calculateSizes () {
-        // Figure out the parent size minus padding.
         const a = elements[this.a].element
         const b = elements[this.b].element
 
@@ -446,12 +436,6 @@ const Split = (ids, options = {}) => {
             setElementSize(element.element, element.size, gutterSize)
         }
 
-        const computedSize = element.element[getBoundingClientRect]()[dimension]
-
-        if (computedSize < element.minSize) {
-            element.minSize = computedSize
-        }
-
         // After the first iteration, and we have a pair object, append it to the
         // list of pairs.
         if (i > 0) {
@@ -459,6 +443,23 @@ const Split = (ids, options = {}) => {
         }
 
         return element
+    })
+
+    elements.forEach((element, i) => {
+        if (i < pairs.length) {
+            const computedSize = element.element[getBoundingClientRect]()[dimension]
+
+            if (computedSize < element.minSize) {
+                const pair = pairs[i]
+                calculateSizes.call(pair)
+
+                if (i === 0 || i === elements.length - 1) {
+                    adjust.call(pair, element.minSize + (gutterSize / 2))
+                } else {
+                    adjust.call(pair, element.minSize + gutterSize + (gutterSize / 2))
+                }
+            }
+        }
     })
 
     function setSizes (newSizes) {
